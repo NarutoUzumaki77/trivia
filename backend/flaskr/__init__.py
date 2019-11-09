@@ -1,10 +1,9 @@
 import os
 from flask import Flask, request, abort, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 
-from ..models import setup_db, Question, Category
+from models import *
 
 QUESTIONS_PER_PAGE = 10
 
@@ -13,17 +12,43 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
-    CORS(app)
 
-    # TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    # TODO: Use the after_request decorator to set Access-Control-Allow
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
+        return response
 
-    # TODO: Create an endpoint to handle GET requests for all available categories.
+    @app.route('/categories')
+    def get_categories():
+        try:
+            categories = db.session.query(Category).all()
+            formatted_category = [category.format() for category in categories]
+            return jsonify({
+                'success': True,
+                'categories': formatted_category
+            }), 200
+        except:
+            abort(422)
 
     # TODO: Create an endpoint to handle GET requests for questions,
     #  including pagination (every 10 questions). This endpoint should return
     #  a list of questions, number of total questions, current category, categories.
+    @app.route('/questions')
+    def get_questions():
+        try:
+            questions = db.session.query(Question).all()
+            formatted_questions = [question.format() for question in questions]
+            return jsonify({
+                'success': True,
+                'questions': formatted_questions,
+                'total_questions': len(formatted_questions),
+                'page': 0
+            })
+        except:
+            abort(422)
 
     '''
     TEST: At this point, when you start the application
