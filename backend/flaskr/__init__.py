@@ -18,7 +18,8 @@ def create_app(test_config=None):
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     @app.after_request
     def after_request(response):
@@ -35,7 +36,7 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_categories():
         try:
-            categories = db.session.query(Category).all()
+            categories = db.session.query(Category).order_by(Category.type).all()
             formatted_category = [category.format() for category in categories]
             return jsonify({
                 'success': True,
@@ -54,11 +55,15 @@ def create_app(test_config=None):
             questions = db.session.query(Question).all()
             formatted_questions = [question.format() for question in questions]
             start, end, page = pagination(request)
+            categories = db.session.query(Category).all()
+            formatted_category = [category.format() for category in categories]
+            category = db.session.query(Category).first()
             return jsonify({
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'page': page
+                'categories': formatted_category,
+                'current_category': category.format()
             }), 200
         except Exception as err:
             logging.error(err)
@@ -123,22 +128,22 @@ def create_app(test_config=None):
     Try using the word "title" to start. 
     '''
 
-    @app.route('/questions/<string:search_phrase>')
-    def search_questions(search_phrase):
-        try:
-            questions = db.session.query(Question).filter_by(
-                Question.question.ilike('%{}%'.format(search_phrase))).all()
-            formatted_questions = [question.format() for question in questions]
-            start, end, page = pagination(request)
-            return jsonify({
-                'success': True,
-                'questions': formatted_questions[start:end],
-                'total_questions': len(formatted_questions),
-                'page': page
-            }), 200
-        except Exception as err:
-            print(err)
-            abort(422)
+    # @app.route('/questions/<string:search_phrase>')
+    # def search_questions(search_phrase):
+    #     try:
+    #         questions = db.session.query(Question).filter_by(
+    #             Question.question.ilike('%{}%'.format(search_phrase))).all()
+    #         formatted_questions = [question.format() for question in questions]
+    #         start, end, page = pagination(request)
+    #         return jsonify({
+    #             'success': True,
+    #             'questions': formatted_questions[start:end],
+    #             'total_questions': len(formatted_questions),
+    #             'page': page
+    #         }), 200
+    #     except Exception as err:
+    #         print(err)
+    #         abort(422)
 
     # TODO: Create a GET endpoint to get questions based on category.
 
@@ -148,18 +153,21 @@ def create_app(test_config=None):
     category to be shown. 
     '''
 
-    @app.route('/questions/<int:category_id>')
+    @app.route('/categories/<int:category_id>/questions')
     def get_questions_based_on_category(category_id):
+
+        category = db.session.query(Category).get(category_id)
+        if category is None:
+            abort(404)
         try:
-            category = db.session.query(Category).get(category_id)
-            questions = db.session.query(Question).filter_by(Question.category == category.type).all()
+            questions = db.session.query(Question).filter(Question.category == category.type).all()
             formatted_questions = [question.format() for question in questions]
             start, end, page = pagination(request)
             return jsonify({
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'page': page
+                'current_category': category.format()
             }), 200
         except Exception as err:
             logging.error(err)

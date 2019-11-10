@@ -77,7 +77,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertEqual(data['total_questions'], 2)
-        self.assertEqual(data['page'], 1)
 
     def test_retrieve_empty_questions(self):
         with self.app.app_context():
@@ -114,6 +113,17 @@ class TriviaTestCase(unittest.TestCase):
 
         res = self.client().delete('/question/{}'.format(question.id))
         self.assertEqual(res.status_code, 204)
+
+    def test_retrieve_questions_by_id(self):
+        with self.app.app_context():
+            self.db = SQLAlchemy()
+            self.db.init_app(self.app)
+            category = self.db.session.query(Category).first()
+
+        res = self.client().get('/categories/{}/questions'.format(category.id))
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['current_category'], category.format())
 
 
 # Make the tests conveniently executable
