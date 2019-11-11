@@ -115,6 +115,10 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().delete('/question/{}'.format(question.id))
         self.assertEqual(res.status_code, 204)
 
+    def test_questions_by_categories(self):
+        res = self.client().get('/categories/3/questions')
+        self.assertEqual(res.status_code, 200)
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
