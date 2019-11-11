@@ -18,7 +18,7 @@ def create_app(test_config=None):
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     @app.after_request
     def after_request(response):
@@ -53,12 +53,15 @@ def create_app(test_config=None):
         try:
             questions = db.session.query(Question).all()
             formatted_questions = [question.format() for question in questions]
+            categories = db.session.query(Category).all()
+            formatted_categories = [category.format() for category in categories]
             start, end, page = pagination(request)
             return jsonify({
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'page': page
+                'categories': formatted_categories,
+                'current_category': categories[0].format()
             }), 200
         except Exception as err:
             logging.error(err)
@@ -148,7 +151,7 @@ def create_app(test_config=None):
     category to be shown. 
     '''
 
-    @app.route('/questions/<int:category_id>')
+    @app.route('/categories/<int:category_id>/questions')
     def get_questions_based_on_category(category_id):
         try:
             category = db.session.query(Category).get(category_id)
@@ -159,7 +162,7 @@ def create_app(test_config=None):
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'page': page
+                'category': category.type
             }), 200
         except Exception as err:
             logging.error(err)
