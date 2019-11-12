@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, abort, jsonify
 from flask_cors import CORS
-import random
+from random import randrange
 import logging
 
 from models import *
@@ -100,30 +100,28 @@ def create_app(test_config=None):
     Try using the word "title" to start. 
     '''
 
-    @app.route('/questions/<string:search_phrase>')
-    def search_questions(search_phrase):
-        try:
-            questions = db.session.query(Question).filter_by(
-                Question.question.ilike('%{}%'.format(search_phrase))).all()
-            formatted_questions = [question.format() for question in questions]
-            start, end, page = pagination(request)
-            return jsonify({
-                'success': True,
-                'questions': formatted_questions[start:end],
-                'total_questions': len(formatted_questions),
-                'page': page
-            }), 200
-        except Exception as err:
-            print(err)
+    @app.route('/questions', methods=['POST'])
+    def search_questions():
+        request_body = request.json
+        search_term = request_body.get('searchTerm', None)
+        if search_term is None:
             abort(422)
-
-    # TODO: Create a GET endpoint to get questions based on category.
-
-    '''
-    TEST: In the "List" tab / main screen, clicking on one of the 
-    categories in the left column will cause only questions of that 
-    category to be shown. 
-    '''
+        else:
+            try:
+                questions = db.session.query(Question).filter_by(
+                    Question.question.ilike('%{}%'.format(search_term))).all()
+                formatted_questions = [question.format() for question in questions]
+                start, end, page = pagination(request)
+                category = db.session.query(Category).first()
+                return jsonify({
+                    'success': True,
+                    'questions': formatted_questions[start:end],
+                    'total_questions': len(formatted_questions),
+                    'currentCategory': category.format()
+                }), 200
+            except Exception as err:
+                print(err)
+                abort(422)
 
     @app.route('/categories/<int:category_id>/questions')
     def get_questions_based_on_category(category_id):
@@ -138,7 +136,7 @@ def create_app(test_config=None):
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'current_category': category
+                'current_category': category.format()
             }), 200
         except Exception as err:
             logging.error(err)
@@ -154,6 +152,33 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not. 
     '''
+    @app.route('/quizzes', methods=['POST'])
+    def get_quizzes():
+        # previous_questions is a list of dicts(questions)
+        # quizCategory is a formatted category
+        data = request.json
+        current_question = None
+        previous_questions = data.get('previous_questions', [])
+        quiz_category = data.get('quiz_category', None)
+        if quiz_category is None:
+            abort(422)
+        else:
+            questions = db.session.query(Question).filter(Question.category == str(quiz_category['id'])).all()
+            formatted_questions = [question.format() for question in questions]
+            if len(previous_questions) <= len(formatted_questions):
+                current_question = get_current_question(formatted_questions, previous_questions)
+
+            return jsonify({
+                'question': current_question
+            }), 200
+
+    def get_current_question(formatted_questions, previous_questions):
+        index = randrange(len(formatted_questions))
+        current_question = formatted_questions[index]
+        while current_question in previous_questions:
+            index = randrange(len(formatted_questions))
+            current_question = formatted_questions[index]
+        return current_question
 
     @app.errorhandler(404)
     def not_found(error):

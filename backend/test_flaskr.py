@@ -13,7 +13,7 @@ class TriviaTestCase(unittest.TestCase):
     def setUp(self):
         self.app = create_app()
         self.client = self.app.test_client
-        self.database_name = "trivia_test"
+        self.database_name = "trivia"
         self.database_path = "postgresql://{}@{}/{}".format('gilbertnwankwo', 'localhost:5432', self.database_name)
         setup_db(self.app, self.database_path)
 
@@ -24,28 +24,28 @@ class TriviaTestCase(unittest.TestCase):
             # create all tables
             self.db.create_all()
 
-            category1 = Category(type='Sport')
-            category2 = Category(type='History')
-            self.db.session.add_all([category1, category2])
-            self.db.session.commit()
-
-            q1 = Question(
-                question="According to one study, how many minutes are actually played during the average "
-                         "American football game?",
-                answer="25",
-                category="Sport",
-                difficulty=0
-            )
-
-            q2 = Question(
-                question="After the 'Mona Lisa' was stolen from the Louvre in 1911, which famous artist was "
-                         "considered a suspect?",
-                answer="Pablo Picasso",
-                category="History",
-                difficulty=1
-            )
-            self.db.session.add_all([q1, q2])
-            self.db.session.commit()
+            # category1 = Category(type='Sport')
+            # category2 = Category(type='History')
+            # self.db.session.add_all([category1, category2])
+            # self.db.session.commit()
+            #
+            # q1 = Question(
+            #     question="According to one study, how many minutes are actually played during the average "
+            #              "American football game?",
+            #     answer="25",
+            #     category="Sport",
+            #     difficulty=0
+            # )
+            #
+            # q2 = Question(
+            #     question="After the 'Mona Lisa' was stolen from the Louvre in 1911, which famous artist was "
+            #              "considered a suspect?",
+            #     answer="Pablo Picasso",
+            #     category="History",
+            #     difficulty=1
+            # )
+            # self.db.session.add_all([q1, q2])
+            # self.db.session.commit()
 
     def tearDown(self):
         with self.app.app_context():
