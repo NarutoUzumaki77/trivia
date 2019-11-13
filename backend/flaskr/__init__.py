@@ -159,18 +159,18 @@ def create_app(test_config=None):
         data = request.json
         current_question = None
         previous_questions = data.get('previous_questions', [])
-        quiz_category = data.get('quiz_category', None)
-        if quiz_category is None:
-            abort(422)
+        quiz_category_id = data.get('quiz_category', 0)
+        if quiz_category_id is 0:
+            questions = db.session.query(Question).all()
         else:
-            questions = db.session.query(Question).filter(Question.category == str(quiz_category['id'])).all()
-            formatted_questions = [question.format() for question in questions]
-            if len(previous_questions) <= len(formatted_questions):
-                current_question = get_current_question(formatted_questions, previous_questions)
+            questions = db.session.query(Question).filter(Question.category == str(quiz_category_id)).all()
+        formatted_questions = [question.format() for question in questions]
+        if len(previous_questions) <= len(formatted_questions):
+            current_question = get_current_question(formatted_questions, previous_questions)
 
-            return jsonify({
-                'question': current_question
-            }), 200
+        return jsonify({
+            'question': current_question
+        }), 200
 
     def get_current_question(formatted_questions, previous_questions):
         index = randrange(len(formatted_questions))

@@ -48,17 +48,18 @@ class TriviaTestCase(unittest.TestCase):
             # self.db.session.commit()
 
     def tearDown(self):
-        with self.app.app_context():
-            self.db = SQLAlchemy()
-            self.db.init_app(self.app)
-            categories = self.db.session.query(Category).all()
-            for category in categories:
-                self.db.session.delete(category)
-
-            questions = self.db.session.query(Question).all()
-            for question in questions:
-                self.db.session.delete(question)
-            self.db.session.commit()
+        pass
+        # with self.app.app_context():
+        #     self.db = SQLAlchemy()
+        #     self.db.init_app(self.app)
+        #     categories = self.db.session.query(Category).all()
+        #     for category in categories:
+        #         self.db.session.delete(category)
+        #
+        #     questions = self.db.session.query(Question).all()
+        #     for question in questions:
+        #         self.db.session.delete(question)
+        #     self.db.session.commit()
 
     def test_retrieve_categories(self):
         res = self.client().get('/categories')
@@ -117,6 +118,18 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_questions_by_categories(self):
         res = self.client().get('/categories/3/questions')
+        self.assertEqual(res.status_code, 200)
+
+    def test_quizz(self):
+        res = self.client().post('/quizzes', json={"previous_questions": [{
+            "answer": "Yannis",
+            "category": "14",
+            "difficulty": 2,
+            "id": 23,
+            "question": "Who was the MVP of the regular season 2019"
+        }],
+            "quiz_category": 14
+        })
         self.assertEqual(res.status_code, 200)
 
 
