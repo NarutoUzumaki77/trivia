@@ -35,7 +35,7 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_categories():
         try:
-            categories = db.session.query(Category).all()
+            categories = db.session.query(Category).order_by(Category.type).all()
             formatted_category = [category.format() for category in categories]
             return jsonify({
                 'success': True,
@@ -87,7 +87,7 @@ def create_app(test_config=None):
                 )
                 db.session.add(question)
                 db.session.commit()
-                return jsonify({'status': 'successful'}), 201
+                return jsonify({'success': True}), 201
         except Exception as err:
             print(err)
             abort(422)
