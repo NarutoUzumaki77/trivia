@@ -166,7 +166,7 @@ def create_app(test_config=None):
             questions = db.session.query(Question).all()
         else:
             category = db.session.query(Category).get(quiz_category_id)
-            questions = db.session.query(Question).filter(Question.category == str(category.type)).all()
+            questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
         formatted_questions = [question.format() for question in questions]
         if len(previous_questions) <= len(formatted_questions):
             current_question = get_current_question(formatted_questions, previous_questions)
@@ -178,7 +178,7 @@ def create_app(test_config=None):
     def get_current_question(formatted_questions, previous_questions):
         index = randrange(len(formatted_questions))
         current_question = formatted_questions[index]
-        while current_question in previous_questions:
+        while current_question['id'] in previous_questions:
             index = randrange(len(formatted_questions))
             current_question = formatted_questions[index]
         return current_question

@@ -28,11 +28,14 @@ class TriviaTestCase(unittest.TestCase):
             self.db.session.add_all([category1, category2])
             self.db.session.commit()
 
+            sport_category = self.db.session.query(Category).filter(Category.type == 'Sport').first()
+            history_category = self.db.session.query(Category).filter(Category.type == 'History').first()
+
             q1 = Question(
                 question="According to one study, how many minutes are actually played during the average "
                          "American football game?",
                 answer="25",
-                category="Sport",
+                category=str(sport_category.id),
                 difficulty=0
             )
 
@@ -40,14 +43,14 @@ class TriviaTestCase(unittest.TestCase):
                 question="After the 'Mona Lisa' was stolen from the Louvre in 1911, which famous artist was "
                          "considered a suspect?",
                 answer="Pablo Picasso",
-                category="History",
+                category=str(history_category.id),
                 difficulty=1
             )
 
             q3 = Question(
                 question="Who is the Best Soccer Player ever",
                 answer="Ronaldo",
-                category="Sport",
+                category=str(sport_category.id),
                 difficulty=2
             )
             self.db.session.add_all([q1, q2, q3])
@@ -147,23 +150,12 @@ class TriviaTestCase(unittest.TestCase):
         with self.app.app_context():
             self.db = SQLAlchemy()
             self.db.init_app(self.app)
-            category = self.db.session.query(Category).filter(Category.type == 'Sport').first()
-
             question = self.db.session.query(Question).filter(Question.answer == 'Ronaldo').first()
 
-        res = self.client().post('/quizzes', json={"previous_questions": [{
-            "answer": "Ronaldo",
-            "category": 'Sport',
-            "difficulty": 2,
-            "id": question.id,
-            "question": "Who is the Best Soccer Player ever"
-        }],
-            "quiz_category": category.id
-        })
+        res = self.client().post('/quizzes', json={"previous_questions": [question.id]})
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(data['question']["question"], 'According to one study, how many minutes are actually played '
-                                                       'during the average American football game?')
+        self.assertNotEqual(data['question']["question"], 'Who is the Best Soccer Player ever')
 
 
 # Make the tests conveniently executable

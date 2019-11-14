@@ -34,7 +34,7 @@ class FormView extends Component {
   submitQuestion = (event) => {
     event.preventDefault();
     $.ajax({
-      url: `/questions`,
+      url: `http://127.0.0.1:5000/questions`,
       type: "POST",
       dataType: 'json',
       contentType: 'application/json',
@@ -44,9 +44,6 @@ class FormView extends Component {
         difficulty: this.state.difficulty,
         category: this.state.category
       }),
-      xhrFields: {
-        withCredentials: true
-      },
       crossDomain: true,
       success: (result) => {
         document.getElementById("add-question-form").reset();
