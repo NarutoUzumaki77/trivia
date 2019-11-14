@@ -77,8 +77,16 @@ def create_app(test_config=None):
     @app.route('/questions', methods=['POST'])
     def create_question():
         try:
-            if request.headers['Content-Type'] == 'application/json':
-                request_body = request.json
+            request_body = request.json
+            if 'searchTerm' in request_body:
+                formatted_questions, category = search_questions(request_body)
+                return jsonify({
+                    'success': True,
+                    'questions': formatted_questions,
+                    'total_questions': len(formatted_questions),
+                    'currentCategory': category
+                }), 200
+            else:  # Create question
                 question = Question(
                     question=request_body.get('question'),
                     answer=request_body.get('answer'),
@@ -100,25 +108,18 @@ def create_app(test_config=None):
     Try using the word "title" to start. 
     '''
 
-    @app.route('/questions', methods=['POST'])
-    def search_questions():
-        request_body = request.json
+    def search_questions(request_body):
         search_term = request_body.get('searchTerm', None)
         if search_term is None:
             abort(422)
         else:
             try:
-                questions = db.session.query(Question).filter_by(
+                questions = db.session.query(Question).filter(
                     Question.question.ilike('%{}%'.format(search_term))).all()
                 formatted_questions = [question.format() for question in questions]
                 start, end, page = pagination(request)
                 category = db.session.query(Category).first()
-                return jsonify({
-                    'success': True,
-                    'questions': formatted_questions[start:end],
-                    'total_questions': len(formatted_questions),
-                    'currentCategory': category.format()
-                }), 200
+                return formatted_questions[start:end], category.format()
             except Exception as err:
                 print(err)
                 abort(422)
@@ -152,6 +153,7 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not. 
     '''
+
     @app.route('/quizzes', methods=['POST'])
     def get_quizzes():
         # previous_questions is a list of dicts(questions)
@@ -163,7 +165,8 @@ def create_app(test_config=None):
         if quiz_category_id is 0:
             questions = db.session.query(Question).all()
         else:
-            questions = db.session.query(Question).filter(Question.category == str(quiz_category_id)).all()
+            category = db.session.query(Category).get(quiz_category_id)
+            questions = db.session.query(Question).filter(Question.category == str(category.type)).all()
         formatted_questions = [question.format() for question in questions]
         if len(previous_questions) <= len(formatted_questions):
             current_question = get_current_question(formatted_questions, previous_questions)

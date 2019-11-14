@@ -1,4 +1,4 @@
-import os
+
 import unittest
 import json
 from flask_sqlalchemy import SQLAlchemy
@@ -43,7 +43,14 @@ class TriviaTestCase(unittest.TestCase):
                 category="History",
                 difficulty=1
             )
-            self.db.session.add_all([q1, q2])
+
+            q3 = Question(
+                question="Who is the Best Soccer Player ever",
+                answer="Ronaldo",
+                category="Sport",
+                difficulty=2
+            )
+            self.db.session.add_all([q1, q2, q3])
             self.db.session.commit()
 
     def tearDown(self):
@@ -74,13 +81,13 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['total_questions'], 2)
+        self.assertEqual(data['total_questions'], 3)
         res = self.client().get('/questions')
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['total_questions'], 2)
+        self.assertEqual(data['total_questions'], 3)
         self.assertTrue(data['current_category'] in data['categories'])
 
     def test_pagination(self):
@@ -90,7 +97,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
         self.assertEqual(data['questions'], [])
-        self.assertEqual(data['total_questions'], 2)
+        self.assertEqual(data['total_questions'], 3)
         self.assertTrue(data['current_category'] in data['categories'])
 
     def test_delete_question(self):
@@ -114,23 +121,49 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], True)
 
     def test_search_questions(self):
-        pass
+        res = self.client().post('/questions', json={'searchTerm': 'American'})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertEqual(data['total_questions'], 1)
+        self.assertEqual(data['questions'][0]['question'], "According to one study, how many minutes are actually "
+                                                           "played during the average American football game?")
 
     def test_questions_by_categories(self):
-        res = self.client().get('/categories/3/questions')
+        with self.app.app_context():
+            self.db = SQLAlchemy()
+            self.db.init_app(self.app)
+            category = self.db.session.query(Category).filter(Category.type == 'History').all()
+
+        res = self.client().get('/categories/{}/questions'.format(category[0].id))
         self.assertEqual(res.status_code, 200)
 
+    def test_negative_questions_by_categories(self):
+        res = self.client().get('/categories/200000/questions')
+        self.assertEqual(res.status_code, 404)
+
     def test_quizz(self):
+        with self.app.app_context():
+            self.db = SQLAlchemy()
+            self.db.init_app(self.app)
+            category = self.db.session.query(Category).filter(Category.type == 'Sport').first()
+
+            question = self.db.session.query(Question).filter(Question.answer == 'Ronaldo').first()
+
         res = self.client().post('/quizzes', json={"previous_questions": [{
-            "answer": "Yannis",
-            "category": "14",
+            "answer": "Ronaldo",
+            "category": 'Sport',
             "difficulty": 2,
-            "id": 23,
-            "question": "Who was the MVP of the regular season 2019"
+            "id": question.id,
+            "question": "Who is the Best Soccer Player ever"
         }],
-            "quiz_category": 14
+            "quiz_category": category.id
         })
+        data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['question']["question"], 'According to one study, how many minutes are actually played '
+                                                       'during the average American football game?')
 
 
 # Make the tests conveniently executable
