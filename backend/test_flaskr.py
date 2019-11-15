@@ -1,4 +1,4 @@
-import os
+
 import unittest
 import json
 from flask_sqlalchemy import SQLAlchemy
@@ -8,7 +8,6 @@ from models import setup_db, Question, Category
 
 
 class TriviaTestCase(unittest.TestCase):
-    """This class represents the trivia test case"""
 
     def setUp(self):
         self.app = create_app()
@@ -29,11 +28,14 @@ class TriviaTestCase(unittest.TestCase):
             self.db.session.add_all([category1, category2])
             self.db.session.commit()
 
+            sport_category = self.db.session.query(Category).filter(Category.type == 'Sport').first()
+            history_category = self.db.session.query(Category).filter(Category.type == 'History').first()
+
             q1 = Question(
                 question="According to one study, how many minutes are actually played during the average "
                          "American football game?",
                 answer="25",
-                category="Sport",
+                category=str(sport_category.id),
                 difficulty=0
             )
 
@@ -41,10 +43,17 @@ class TriviaTestCase(unittest.TestCase):
                 question="After the 'Mona Lisa' was stolen from the Louvre in 1911, which famous artist was "
                          "considered a suspect?",
                 answer="Pablo Picasso",
-                category="History",
+                category=str(history_category.id),
                 difficulty=1
             )
-            self.db.session.add_all([q1, q2])
+
+            q3 = Question(
+                question="Who is the Best Soccer Player ever",
+                answer="Ronaldo",
+                category=str(sport_category.id),
+                difficulty=2
+            )
+            self.db.session.add_all([q1, q2, q3])
             self.db.session.commit()
 
     def tearDown(self):
@@ -66,9 +75,8 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-
-    def test_retrieve_empty_Categories(self):
-        pass
+        self.assertEqual(data['categories'][0]['type'], 'History')
+        self.assertEqual(data['categories'][1]['type'], 'Sport')
 
     def test_retrieve_questions(self):
         res = self.client().get('/questions')
@@ -76,35 +84,24 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['total_questions'], 2)
-        self.assertEqual(data['page'], 1)
-
-    def test_retrieve_empty_questions(self):
-        with self.app.app_context():
-            self.db = SQLAlchemy()
-            self.db.init_app(self.app)
-
-            questions = self.db.session.query(Question).all()
-            for question in questions:
-                self.db.session.delete(question)
-            self.db.session.commit()
-
+        self.assertEqual(data['total_questions'], 3)
         res = self.client().get('/questions')
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['total_questions'], 0)
-        self.assertEqual(data['page'], 1)
+        self.assertEqual(data['total_questions'], 3)
+        self.assertTrue(data['current_category'] in data['categories'])
 
     def test_pagination(self):
-        res = self.client().get('/questions?page=3')
+        res = self.client().get('/questions?page=2')
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['total_questions'], 2)
-        self.assertEqual(data['page'], 3)
+        self.assertEqual(data['questions'], [])
+        self.assertEqual(data['total_questions'], 3)
+        self.assertTrue(data['current_category'] in data['categories'])
 
     def test_delete_question(self):
         with self.app.app_context():
@@ -112,8 +109,53 @@ class TriviaTestCase(unittest.TestCase):
             self.db.init_app(self.app)
             question = self.db.session.query(Question).first()
 
-        res = self.client().delete('/question/{}'.format(question.id))
+        res = self.client().delete('/questions/{}'.format(question.id))
         self.assertEqual(res.status_code, 204)
+
+    def test_create_question(self):
+        res = self.client().post('/questions', json={
+            'question': 'What is my name',
+            'answer': 'Gil',
+            'category': 'Sport',
+            'difficulty': 3
+        })
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(data['success'], True)
+
+    def test_search_questions(self):
+        res = self.client().post('/questions', json={'searchTerm': 'American'})
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertEqual(data['total_questions'], 1)
+        self.assertEqual(data['questions'][0]['question'], "According to one study, how many minutes are actually "
+                                                           "played during the average American football game?")
+
+    def test_questions_by_categories(self):
+        with self.app.app_context():
+            self.db = SQLAlchemy()
+            self.db.init_app(self.app)
+            category = self.db.session.query(Category).filter(Category.type == 'History').all()
+
+        res = self.client().get('/categories/{}/questions'.format(category[0].id))
+        self.assertEqual(res.status_code, 200)
+
+    def test_negative_questions_by_categories(self):
+        res = self.client().get('/categories/200000/questions')
+        self.assertEqual(res.status_code, 404)
+
+    def test_quizz(self):
+        with self.app.app_context():
+            self.db = SQLAlchemy()
+            self.db.init_app(self.app)
+            question = self.db.session.query(Question).filter(Question.answer == 'Ronaldo').first()
+
+        res = self.client().post('/quizzes', json={"previous_questions": [question.id]})
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertNotEqual(data['question']["question"], 'Who is the Best Soccer Player ever')
 
 
 # Make the tests conveniently executable

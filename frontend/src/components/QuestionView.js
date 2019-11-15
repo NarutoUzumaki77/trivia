@@ -23,14 +23,15 @@ class QuestionView extends Component {
 
   getQuestions = () => {
     $.ajax({
-      url: `/questions?page=${this.state.page}`, //TODO: update request URL
+      url: `http://127.0.0.1:5000/questions?page=${this.state.page}`, 
       type: "GET",
       success: (result) => {
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
           categories: result.categories,
-          currentCategory: result.current_category })
+          currentCategory: result.current_category
+          })
         return;
       },
       error: (error) => {
@@ -60,9 +61,10 @@ class QuestionView extends Component {
 
   getByCategory= (id) => {
     $.ajax({
-      url: `/categories/${id}/questions`, //TODO: update request URL
+      url: `http://127.0.0.1:5000/categories/${id}/questions`, 
       type: "GET",
       success: (result) => {
+        console.log(result)
         this.setState({
           questions: result.questions,
           totalQuestions: result.total_questions,
@@ -78,7 +80,7 @@ class QuestionView extends Component {
 
   submitSearch = (searchTerm) => {
     $.ajax({
-      url: `/questions`, //TODO: update request URL
+      url: `http://127.0.0.1:5000/questions`, 
       type: "POST",
       dataType: 'json',
       contentType: 'application/json',
@@ -105,10 +107,11 @@ class QuestionView extends Component {
     if(action === 'DELETE') {
       if(window.confirm('are you sure you want to delete the question?')) {
         $.ajax({
-          url: `/questions/${id}`, //TODO: update request URL
+          url: `http://127.0.0.1:5000/questions/${id}`, 
           type: "DELETE",
           success: (result) => {
             this.getQuestions();
+            console.log(`Deleted question id ${id} successfully`)
           },
           error: (error) => {
             alert('Unable to load questions. Please try your request again')
@@ -125,12 +128,14 @@ class QuestionView extends Component {
         <div className="categories-list">
           <h2 onClick={() => {this.getQuestions()}}>Categories</h2>
           <ul>
+
             {Object.keys(this.state.categories).map((id, ) => (
-              <li key={id} onClick={() => {this.getByCategory(id)}}>
-                {this.state.categories[id]}
-                <img className="category" src={`${this.state.categories[id]}.svg`}/>
+              <li key={id} onClick={() => {this.getByCategory(this.state.categories[id].id)}}>
+                {this.state.categories[id].type}
+                <img className="category" src={`${this.state.categories[id].type}.svg`}/>
               </li>
             ))}
+
           </ul>
           <Search submitSearch={this.submitSearch}/>
         </div>

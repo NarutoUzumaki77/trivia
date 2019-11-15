@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, abort, jsonify
 from flask_cors import CORS
-import random
+from random import randrange
 import logging
 
 from models import *
@@ -18,7 +18,7 @@ def create_app(test_config=None):
     logging.basicConfig(format=format, level=logging.INFO,
                         datefmt="%H:%M:%S")
 
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     @app.after_request
     def after_request(response):
@@ -35,7 +35,7 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_categories():
         try:
-            categories = db.session.query(Category).all()
+            categories = db.session.query(Category).order_by(Category.type).all()
             formatted_category = [category.format() for category in categories]
             return jsonify({
                 'success': True,
@@ -45,63 +45,48 @@ def create_app(test_config=None):
             logging.error(err)
             abort(422)
 
-    # TODO: Create an endpoint to handle GET requests for questions,
-    #  including pagination (every 10 questions). This endpoint should return
-    #  a list of questions, number of total questions, current category, categories.
     @app.route('/questions')
     def get_questions():
         try:
             questions = db.session.query(Question).all()
             formatted_questions = [question.format() for question in questions]
+            categories = db.session.query(Category).all()
+            formatted_categories = [category.format() for category in categories]
             start, end, page = pagination(request)
             return jsonify({
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'page': page
+                'categories': formatted_categories,
+                'current_category': categories[0].format()
             }), 200
         except Exception as err:
             logging.error(err)
             abort(422)
 
-    '''
-    TEST: At this point, when you start the application
-    you should see questions and categories generated,
-    ten questions per page and pagination at the bottom of the screen for three pages.
-    Clicking on the page numbers should update the questions. 
-    '''
-
-    # TODO: Create an endpoint to DELETE question using a question ID.
-    '''
-    TEST: When you click the trash icon next to a question, the question will be removed.
-    This removal will persist in the database and when you refresh the page. 
-    '''
-
-    @app.route('/question/<int:question_id>', methods=['DELETE'])
+    @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
         try:
-            book = db.session.query(Question).get(question_id)
-            db.session.delete(book)
-            db.session.commit()
+            question = db.session.query(Question).get(question_id)
+            question.delete()
             return '', 204
         except Exception as err:
             logging.error(err)
             abort(422)
 
-    # TODO: Create an endpoint to POST a new question,
-    #  which will require the question and answer text, category, and difficulty score.
-
-    '''
-    TEST: When you submit a question on the "Add" tab, 
-    the form will clear and the question will appear at the end of the last page
-    of the questions list in the "List" tab.  
-    '''
-
     @app.route('/questions', methods=['POST'])
     def create_question():
         try:
-            if request.headers['Content-Type'] == 'application/json':
-                request_body = request.json
+            request_body = request.json
+            if 'searchTerm' in request_body:
+                formatted_questions, category = search_questions(request_body)
+                return jsonify({
+                    'success': True,
+                    'questions': formatted_questions,
+                    'total_questions': len(formatted_questions),
+                    'currentCategory': category
+                }), 200
+            else:  # Create question
                 question = Question(
                     question=request_body.get('question'),
                     answer=request_body.get('answer'),
@@ -110,7 +95,7 @@ def create_app(test_config=None):
                 )
                 db.session.add(question)
                 db.session.commit()
-                return jsonify({'status': 'successful'}), 201
+                return jsonify({'success': True}), 201
         except Exception as err:
             print(err)
             abort(422)
@@ -123,43 +108,36 @@ def create_app(test_config=None):
     Try using the word "title" to start. 
     '''
 
-    @app.route('/questions/<string:search_phrase>')
-    def search_questions(search_phrase):
-        try:
-            questions = db.session.query(Question).filter_by(
-                Question.question.ilike('%{}%'.format(search_phrase))).all()
-            formatted_questions = [question.format() for question in questions]
-            start, end, page = pagination(request)
-            return jsonify({
-                'success': True,
-                'questions': formatted_questions[start:end],
-                'total_questions': len(formatted_questions),
-                'page': page
-            }), 200
-        except Exception as err:
-            print(err)
+    def search_questions(request_body):
+        search_term = request_body.get('searchTerm', None)
+        if search_term is None:
             abort(422)
+        else:
+            try:
+                questions = db.session.query(Question).filter(
+                    Question.question.ilike('%{}%'.format(search_term))).all()
+                formatted_questions = [question.format() for question in questions]
+                start, end, page = pagination(request)
+                category = db.session.query(Category).first()
+                return formatted_questions[start:end], category.format()
+            except Exception as err:
+                print(err)
+                abort(422)
 
-    # TODO: Create a GET endpoint to get questions based on category.
-
-    '''
-    TEST: In the "List" tab / main screen, clicking on one of the 
-    categories in the left column will cause only questions of that 
-    category to be shown. 
-    '''
-
-    @app.route('/questions/<int:category_id>')
+    @app.route('/categories/<int:category_id>/questions')
     def get_questions_based_on_category(category_id):
+        category = db.session.query(Category).get(category_id)
+        if category is None:
+            abort(404)
         try:
-            category = db.session.query(Category).get(category_id)
-            questions = db.session.query(Question).filter_by(Question.category == category.type).all()
+            questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
             formatted_questions = [question.format() for question in questions]
             start, end, page = pagination(request)
             return jsonify({
                 'success': True,
                 'questions': formatted_questions[start:end],
                 'total_questions': len(formatted_questions),
-                'page': page
+                'current_category': category.format()
             }), 200
         except Exception as err:
             logging.error(err)
@@ -176,7 +154,35 @@ def create_app(test_config=None):
     and shown whether they were correct or not. 
     '''
 
-    # TODO: Create error handlers for all expected errors including 404 and 422.
+    @app.route('/quizzes', methods=['POST'])
+    def get_quizzes():
+        # previous_questions is a list of dicts(questions)
+        # quizCategory is a formatted category
+        data = request.json
+        current_question = None
+        previous_questions = data.get('previous_questions', [])
+        quiz_category_id = data.get('quiz_category', 0)
+        if quiz_category_id is 0:
+            questions = db.session.query(Question).all()
+        else:
+            category = db.session.query(Category).get(quiz_category_id)
+            questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
+        formatted_questions = [question.format() for question in questions]
+        if len(previous_questions) <= len(formatted_questions):
+            current_question = get_current_question(formatted_questions, previous_questions)
+
+        return jsonify({
+            'question': current_question
+        }), 200
+
+    def get_current_question(formatted_questions, previous_questions):
+        index = randrange(len(formatted_questions))
+        current_question = formatted_questions[index]
+        while current_question['id'] in previous_questions:
+            index = randrange(len(formatted_questions))
+            current_question = formatted_questions[index]
+        return current_question
+
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({
