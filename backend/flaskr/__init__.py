@@ -35,7 +35,7 @@ def create_app(test_config=None):
     @app.route('/categories')
     def get_categories():
         try:
-            categories = db.session.query(Category).order_by(Category.type).all()
+            categories = db.session.query(Category).all()
             formatted_category = [category.format() for category in categories]
             return jsonify({
                 'success': True,
@@ -100,14 +100,6 @@ def create_app(test_config=None):
             print(err)
             abort(422)
 
-    # TODO: Create a POST endpoint to get questions based on a search term.
-    #  It should return any questions for whom the search term is a substring of the question.
-    '''
-    TEST: Search by any phrase. The questions list will update to include 
-    only question that include that string within their question. 
-    Try using the word "title" to start. 
-    '''
-
     def search_questions(request_body):
         search_term = request_body.get('searchTerm', None)
         if search_term is None:
@@ -156,8 +148,6 @@ def create_app(test_config=None):
 
     @app.route('/quizzes', methods=['POST'])
     def get_quizzes():
-        # previous_questions is a list of dicts(questions)
-        # quizCategory is a formatted category
         data = request.json
         current_question = None
         previous_questions = data.get('previous_questions', [])

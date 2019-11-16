@@ -75,8 +75,8 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['categories'][0]['type'], 'History')
-        self.assertEqual(data['categories'][1]['type'], 'Sport')
+        self.assertEqual(data['categories'][0]['type'], 'Sport')
+        self.assertEqual(data['categories'][1]['type'], 'History')
 
     def test_retrieve_questions(self):
         res = self.client().get('/questions')
