@@ -115,22 +115,25 @@ def create_app(test_config=None):
 
     @app.route('/quizzes', methods=['POST'])
     def get_quizzes():
-        data = request.json
-        current_question = None
-        previous_questions = data.get('previous_questions', [])
-        quiz_category_id = data.get('quiz_category', 0)
-        if quiz_category_id is 0:
-            questions = db.session.query(Question).all()
-        else:
-            category = db.session.query(Category).get(quiz_category_id)
-            questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
-        formatted_questions = [question.format() for question in questions]
-        if len(previous_questions) + 1 <= len(formatted_questions):
-            current_question = get_current_question(formatted_questions, previous_questions)
+        try:
+            data = request.json
+            current_question = None
+            previous_questions = data.get('previous_questions', [])
+            quiz_category_id = data.get('quiz_category', 0)
+            if quiz_category_id is 0:
+                questions = db.session.query(Question).all()
+            else:
+                category = db.session.query(Category).get(quiz_category_id)
+                questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
+            formatted_questions = [question.format() for question in questions]
+            if len(previous_questions) + 1 <= len(formatted_questions):
+                current_question = get_current_question(formatted_questions, previous_questions)
 
-        return jsonify({
-            'question': current_question
-        }), 200
+            return jsonify({
+                'question': current_question
+            }), 200
+        except:
+            abort(422)
 
     @app.errorhandler(404)
     def not_found(error):
