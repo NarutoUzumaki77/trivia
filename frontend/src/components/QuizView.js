@@ -45,12 +45,9 @@ class QuizView extends Component {
 
   getNextQuestion = () => {
     const previousQuestions = [...this.state.previousQuestions]
-    console.log(this.state.currentQuestion)
-    console.log(this.state.currentQuestion.id)
     if(this.state.currentQuestion.id) { 
       previousQuestions.push(this.state.currentQuestion.id) 
     }
-    console.log(this.state.previousQuestions)
     $.ajax({
       url: 'http://127.0.0.1:5000/quizzes', 
       type: "POST",
@@ -125,7 +122,7 @@ class QuizView extends Component {
   renderFinalScore(){
     return(
       <div className="quiz-play-holder">
-        <div className="final-header"> Your Final Score is {this.state.numCorrect}</div>
+  <div className="final-header"> Your Final Score is {this.state.numCorrect}/{this.state.previousQuestions.length}</div>
         <div className="play-again button" onClick={this.restartGame}> Play Again? </div>
       </div>
     )

@@ -66,26 +66,106 @@ One note before you delve into your tasks: for each endpoint you are expected to
 8. Create a POST endpoint to get questions to play the quiz. This endpoint should take category and previous question parameters and return a random questions within the given category, if provided, and that is not one of the previous questions. 
 9. Create error handlers for all expected errors including 400, 404, 422 and 500. 
 
-REVIEW_COMMENT
+# REST Resource
 ```
-This README is missing documentation of your endpoints. Below is an example for your endpoint to get all categories. Please use it as a reference for creating your documentation and resubmit your code. 
 
 Endpoints
 GET '/categories'
-GET ...
-POST ...
-DELETE ...
+GET '/questions'
+POST '/questions'
+GET '/categories/{categoryId}/questions'
+POST '/quizzes'
+DELETE '/questions/{questionId}'
 
 GET '/categories'
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
-- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
-{'1' : "Science",
-'2' : "Art",
-'3' : "Geography",
-'4' : "History",
-'5' : "Entertainment",
-'6' : "Sports"}
+- Returns: An object with keys (categories and success) that categories contain a dictionary of with keys id and type, success is a boolean value. 
+{
+  "categories": [
+    {
+      "id": 1,
+      "type": "Science"
+    },
+    {
+      "id": 2,
+      "type": "Art"
+    },
+    {
+      "id": 3,
+      "type": "Geography"
+    },
+    {
+      "id": 4,
+      "type": "History"
+    },
+    {
+      "id": 5,
+      "type": "Entertainment"
+    },
+    {
+      "id": 6,
+      "type": "Sports"
+    }
+  ],
+  "success": true
+}
+
+GET '/questions'
+- Fetches a dictionary of all questions, current category and total questions. Pagination of 10 questions per page is in effect
+- Request Arguments: page, default is 1 ('/questions?page=2')
+- Returns: An object with keys (questions, categories, current_category, success, total_questions)
+
+POST '/questions'
+- Creates a question
+- Request Arguments: None
+- Request Body: json = {'question': '', 'answer':'', 'category':'', 'difficulty':''}
+- Returns: 201 response
+
+POST '/questions'
+- Get questions based on a search term
+- Request Arguments: None
+- Request Body: json = {'searchTerm': ''}
+- Returns:
+{
+  "currentCategory": {
+    "id": 1,
+    "type": "Art"
+  },
+  "questions": [
+    {
+      "answer": "Vinci",
+      "category": "1",
+      "difficulty": 3,
+      "id": 1,
+      "question": "In which town was Leonardo da Vinci born?"
+    }
+  ],
+  "success": true,
+  "total_questions": 1
+}
+
+GET '/categories/{categoryId}/questions'
+- Fetches questions based on category
+- Request Arguments: None
+- Returns: An object with keys (questions, current_category, success, total_questions)
+
+POST '/quizzes'
+- Fetches questions to play the quiz
+- Request Body: json with two keys(quiz_category, previous_questions), category id and a list of previous question ids
+- Return: A random question within the given category, if provided, and that is not one of the previous questions
+{
+  "question": {
+    "answer": "Vulture",
+    "category": "5",
+    "difficulty": 4,
+    "id": 6,
+    "question": "In Disney’s The Jungle Book what kind of animal is Ringo? Monkey, snake, vulture, elephant"
+  }
+}
+
+DELETE '/questions/{questionId}'
+- Deletes a question
 
 ```
 
