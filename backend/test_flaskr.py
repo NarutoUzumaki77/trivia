@@ -112,6 +112,14 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().delete('/questions/{}'.format(question.id))
         self.assertEqual(res.status_code, 204)
 
+    def test_negative_delete_question(self):
+        res = self.client().delete('/questions/2345678945655')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['error'], 404)
+        self.assertEqual(data['message'], 'Resource not Found')
+        self.assertEqual(data['success'], False)
+
     def test_create_question(self):
         res = self.client().post('/questions', json={
             'question': 'What is my name',
@@ -143,7 +151,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_negative_questions_by_categories(self):
-        res = self.client().get('/categories/200000/questions')
+        res = self.client().get('/categories/2000005697/questions')
         self.assertEqual(res.status_code, 404)
 
     def test_quizz(self):
