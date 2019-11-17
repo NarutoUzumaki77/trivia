@@ -26,12 +26,6 @@ def create_app(test_config=None):
         response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
         return response
 
-    def pagination(_request):
-        page = request.args.get('page', 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-        return start, end, page
-
     @app.route('/categories')
     def get_categories():
         try:
@@ -72,7 +66,7 @@ def create_app(test_config=None):
             return '', 204
         except Exception as err:
             logging.error(err)
-            abort(422)
+            abort(404)
 
     @app.route('/questions', methods=['POST'])
     def create_question():
@@ -99,22 +93,6 @@ def create_app(test_config=None):
         except Exception as err:
             print(err)
             abort(422)
-
-    def search_questions(request_body):
-        search_term = request_body.get('searchTerm', None)
-        if search_term is None:
-            abort(422)
-        else:
-            try:
-                questions = db.session.query(Question).filter(
-                    Question.question.ilike('%{}%'.format(search_term))).all()
-                formatted_questions = [question.format() for question in questions]
-                start, end, page = pagination(request)
-                category = db.session.query(Category).first()
-                return formatted_questions[start:end], category.format()
-            except Exception as err:
-                print(err)
-                abort(422)
 
     @app.route('/categories/<int:category_id>/questions')
     def get_questions_based_on_category(category_id):
@@ -154,14 +132,6 @@ def create_app(test_config=None):
             'question': current_question
         }), 200
 
-    def get_current_question(formatted_questions, previous_questions):
-        index = randrange(len(formatted_questions))
-        current_question = formatted_questions[index]
-        while current_question['id'] in previous_questions:
-            index = randrange(len(formatted_questions))
-            current_question = formatted_questions[index]
-        return current_question
-
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({
@@ -177,5 +147,35 @@ def create_app(test_config=None):
             "error": 422,
             "message": "Unprocessable Entity"
         }), 422
+
+    def pagination(_request):
+        page = request.args.get('page', 1, type=int)
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+        return start, end, page
+
+    def get_current_question(formatted_questions, previous_questions):
+        index = randrange(len(formatted_questions))
+        current_question = formatted_questions[index]
+        while current_question['id'] in previous_questions:
+            index = randrange(len(formatted_questions))
+            current_question = formatted_questions[index]
+        return current_question
+
+    def search_questions(request_body):
+        search_term = request_body.get('searchTerm', None)
+        if search_term is None:
+            abort(422)
+        else:
+            try:
+                questions = db.session.query(Question).filter(
+                    Question.question.ilike('%{}%'.format(search_term))).all()
+                formatted_questions = [question.format() for question in questions]
+                start, end, page = pagination(request)
+                category = db.session.query(Category).first()
+                return formatted_questions[start:end], category.format()
+            except Exception as err:
+                print(err)
+                abort(422)
 
     return app
