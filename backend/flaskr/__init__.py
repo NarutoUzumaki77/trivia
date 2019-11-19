@@ -22,12 +22,18 @@ def create_app(test_config=None):
 
     @app.after_request
     def after_request(response):
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, true')
-        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers',
+                             'Content-Type, Authorization, true')
+        response.headers.add('Access-Control-Allow-Methods',
+                             'GET, POST, PATCH, DELETE, OPTIONS')
         return response
 
     @app.route('/categories')
     def get_categories():
+        """
+        get all categories from db
+        :return:
+        """
         try:
             categories = db.session.query(Category).all()
             formatted_category = [category.format() for category in categories]
@@ -41,6 +47,10 @@ def create_app(test_config=None):
 
     @app.route('/questions')
     def get_questions():
+        """
+        get all questions from db
+        :return:
+        """
         try:
             questions = db.session.query(Question).all()
             formatted_questions = [question.format() for question in questions]
@@ -60,16 +70,26 @@ def create_app(test_config=None):
 
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
     def delete_question(question_id):
+        """
+        deletes the question with the given question id from db
+        :return:
+        """
         try:
             question = db.session.query(Question).get(question_id)
             question.delete()
-            return '', 204
+            return jsonify({
+                'success': True,
+            }), 200
         except Exception as err:
             logging.error(err)
             abort(404)
 
     @app.route('/questions', methods=['POST'])
     def create_question():
+        """
+        Add a new question to db
+        :return:
+        """
         try:
             request_body = request.json
             if 'searchTerm' in request_body:
@@ -81,10 +101,15 @@ def create_app(test_config=None):
                     'currentCategory': category
                 }), 200
             else:  # Create question
+                category_id = request_body.get('category')
+                try:
+                    category = int(category_id)
+                except:
+                    return abort(422)
                 question = Question(
                     question=request_body.get('question'),
                     answer=request_body.get('answer'),
-                    category=request_body.get('category'),
+                    category=category_id,
                     difficulty=int(request_body.get('difficulty'))
                 )
                 db.session.add(question)
@@ -96,11 +121,16 @@ def create_app(test_config=None):
 
     @app.route('/categories/<int:category_id>/questions')
     def get_questions_based_on_category(category_id):
+        """
+        get all the questions in given category
+        :return:
+        """
         category = db.session.query(Category).get(category_id)
         if category is None:
             abort(404)
         try:
-            questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
+            questions = db.session.query(Question).filter(
+                Question.category == str(category.id)).all()
             formatted_questions = [question.format() for question in questions]
             start, end, page = pagination(request)
             return jsonify({
@@ -115,6 +145,12 @@ def create_app(test_config=None):
 
     @app.route('/quizzes', methods=['POST'])
     def get_quizzes():
+        """
+        Fetches a random current question, while ensuring the previous
+        questions from the request body is not passed back in the response as
+        current question
+        :return:
+        """
         try:
             data = request.json
             current_question = None
@@ -124,10 +160,12 @@ def create_app(test_config=None):
                 questions = db.session.query(Question).all()
             else:
                 category = db.session.query(Category).get(quiz_category_id)
-                questions = db.session.query(Question).filter(Question.category == str(category.id)).all()
+                questions = db.session.query(Question).filter(
+                    Question.category == str(category.id)).all()
             formatted_questions = [question.format() for question in questions]
             if len(previous_questions) + 1 <= len(formatted_questions):
-                current_question = get_current_question(formatted_questions, previous_questions)
+                current_question = get_current_question(formatted_questions,
+                                                        previous_questions)
 
             return jsonify({
                 'question': current_question
@@ -151,13 +189,38 @@ def create_app(test_config=None):
             "message": "Unprocessable Entity"
         }), 422
 
+    @app.errorhandler(400)
+    def not_found(error):
+        return jsonify({
+            "success": False,
+            "error": 400,
+            "message": "Bad Request"
+        }), 400
+
+    @app.errorhandler(500)
+    def not_found(error):
+        return jsonify({
+            "success": False,
+            "error": 500,
+            "message": "Internal Server Error"
+        }), 500
+
     def pagination(_request):
+        """
+        breaks up the questions into pages with 10 per page
+        :return:
+        """
         page = request.args.get('page', 1, type=int)
         start = (page - 1) * QUESTIONS_PER_PAGE
         end = start + QUESTIONS_PER_PAGE
         return start, end, page
 
     def get_current_question(formatted_questions, previous_questions):
+        """
+        check previous question and then return a current question that
+        is not in the list of previous questions
+        :return:
+        """
         index = randrange(len(formatted_questions))
         current_question = formatted_questions[index]
         while current_question['id'] in previous_questions:
@@ -166,6 +229,10 @@ def create_app(test_config=None):
         return current_question
 
     def search_questions(request_body):
+        """
+        search question by key word
+        :return:
+        """
         search_term = request_body.get('searchTerm', None)
         if search_term is None:
             abort(422)
@@ -173,7 +240,8 @@ def create_app(test_config=None):
             try:
                 questions = db.session.query(Question).filter(
                     Question.question.ilike('%{}%'.format(search_term))).all()
-                formatted_questions = [question.format() for question in questions]
+                formatted_questions = \
+                    [question.format() for question in questions]
                 start, end, page = pagination(request)
                 category = db.session.query(Category).first()
                 return formatted_questions[start:end], category.format()
