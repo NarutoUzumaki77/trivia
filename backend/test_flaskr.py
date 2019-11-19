@@ -110,7 +110,7 @@ class TriviaTestCase(unittest.TestCase):
             question = self.db.session.query(Question).first()
 
         res = self.client().delete('/questions/{}'.format(question.id))
-        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.status_code, 200)
 
     def test_negative_delete_question(self):
         res = self.client().delete('/questions/2345678945655')
@@ -124,12 +124,24 @@ class TriviaTestCase(unittest.TestCase):
         res = self.client().post('/questions', json={
             'question': 'What is my name',
             'answer': 'Gil',
-            'category': 'Sport',
+            'category': '23',
             'difficulty': 3
         })
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 201)
         self.assertEqual(data['success'], True)
+
+    def test_negative_create_question(self):
+        res = self.client().post('/questions', json={
+            'question': 'What is my name',
+            'answer': 'Gil',
+            'category': 'ab',
+            'difficulty': 3
+        })
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 422)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], "Unprocessable Entity")
 
     def test_search_questions(self):
         res = self.client().post('/questions', json={'searchTerm': 'American'})

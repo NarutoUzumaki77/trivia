@@ -66,10 +66,25 @@ One note before you delve into your tasks: for each endpoint you are expected to
 8. Create a POST endpoint to get questions to play the quiz. This endpoint should take category and previous question parameters and return a random questions within the given category, if provided, and that is not one of the previous questions. 
 9. Create error handlers for all expected errors including 400, 404, 422 and 500. 
 
-# REST Resource
+## REST Resource
 ```
+**Getting Started**
+Base URL: This app is hosted locally and the default url is http://127.0.0.1:5000/
+Authentication: This version of the application does not require authentication or API keys.
 
-Endpoints
+**Error Handling**
+{
+  "error": 404,
+  "message": "Resource not Found",
+  "success": false
+}
+The API will return one of 4 error types when request fails.
+400: Bad Request
+404: Resource Not Found
+422: Unprocessable Entity
+500: Internal Server Error
+
+**Endpoints**
 GET '/categories'
 GET '/questions'
 POST '/questions'
@@ -81,6 +96,7 @@ GET '/categories'
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
 - Returns: An object with keys (categories and success) that categories contain a dictionary of with keys id and type, success is a boolean value. 
+- Sample: curl http://127.0.0.1:5000/categories
 {
   "categories": [
     {
@@ -113,20 +129,61 @@ GET '/categories'
 
 GET '/questions'
 - Fetches a dictionary of all questions, current category and total questions. Pagination of 10 questions per page is in effect
-- Request Arguments: page, default is 1 ('/questions?page=2')
+- Request Arguments: page, default is 1 
 - Returns: An object with keys (questions, categories, current_category, success, total_questions)
+- Sample: curl http://127.0.0.1:5000/questions
+{
+  "categories": [
+    {
+      "id": 4,
+      "type": "History"
+    },
+    {
+      "id": 5,
+      "type": "Entertainment"
+    },
+    {
+      "id": 6,
+      "type": "Sports"
+    }
+  ],
+  "current_category": {
+    "id": 1,
+    "type": "Science"
+  },
+  "questions": [
+    {
+      "answer": "Maya Angelou",
+      "category": 4,
+      "difficulty": 2,
+      "id": 5,
+      "question": "Whose autobiography is entitled 'I Know Why the Caged Bird Sings'?"
+    },
+    {
+      "answer": "Muhammad Ali",
+      "category": 4,
+      "difficulty": 1,
+      "id": 9,
+      "question": "What boxer's original name is Cassius Clay?"
+    }
+  ],
+  "success": true,
+  "total_questions": 19
+}
 
 POST '/questions'
 - Creates a question
 - Request Arguments: None
-- Request Body: json = {'question': '', 'answer':'', 'category':'', 'difficulty':''}
 - Returns: 201 response
+- Sample: curl --request POST -data '{"question":"What is my name", "answer": "John", "category": "2", "difficulty": "3"} http://http://127.0.0.1:5000/questions' 
+{
+  "success": true
+}
 
 POST '/questions'
-- Get questions based on a search term
+- Get questions based on a search term, search is case insensitive
 - Request Arguments: None
-- Request Body: json = {'searchTerm': ''}
-- Returns:
+- Sample: curl --request POST -data '{"searchTerm":"vinci"} http://http://127.0.0.1:5000/questions' 
 {
   "currentCategory": {
     "id": 1,
@@ -149,11 +206,44 @@ GET '/categories/{categoryId}/questions'
 - Fetches questions based on category
 - Request Arguments: None
 - Returns: An object with keys (questions, current_category, success, total_questions)
+- Sample: http://127.0.0.1:5000/categories/4/questions
+{
+  "current_category": {
+    "id": 4,
+    "type": "History"
+  },
+  "questions": [
+    {
+      "answer": "Muhammad Ali",
+      "category": 4,
+      "difficulty": 1,
+      "id": 9,
+      "question": "What boxer's original name is Cassius Clay?"
+    },
+    {
+      "answer": "George Washington Carver",
+      "category": 4,
+      "difficulty": 2,
+      "id": 12,
+      "question": "Who invented Peanut Butter?"
+    },
+    {
+      "answer": "Scarab",
+      "category": 4,
+      "difficulty": 4,
+      "id": 23,
+      "question": "Which dung beetle was worshipped by the ancient Egyptians?"
+    }
+  ],
+  "success": true,
+  "total_questions": 3
+}
 
 POST '/quizzes'
 - Fetches questions to play the quiz
 - Request Body: json with two keys(quiz_category, previous_questions), category id and a list of previous question ids
 - Return: A random question within the given category, if provided, and that is not one of the previous questions
+- Sample: http://127.0.0.1:5000/quizzes
 {
   "question": {
     "answer": "Vulture",
@@ -166,7 +256,10 @@ POST '/quizzes'
 
 DELETE '/questions/{questionId}'
 - Deletes a question
-
+- Sample: http://127.0.0.1:5000/questions/5
+{
+  "success": true
+}
 ```
 
 
@@ -175,6 +268,5 @@ To run the tests, run
 ```
 dropdb trivia_test
 createdb trivia_test
-psql trivia_test < trivia.psql
 python test_flaskr.py
 ```
