@@ -176,7 +176,7 @@ POST '/questions'
 - Creates a question
 - Request Arguments: None
 - Returns: 201 response
-- Sample: curl --request POST -data '{"question":"What is my name", "answer": "John", "category": "2", "difficulty": "3"} http://http://127.0.0.1:5000/questions' 
+- Sample: curl -data '{"question":"What is my name", "answer": "John", "category": "2", "difficulty": "3"}' -H "Content-Type: application/json" -X ttp://http://127.0.0.1:5000/questions
 ```
 {
   "success": true
@@ -186,7 +186,7 @@ POST '/questions'
 POST '/questions'
 - Get questions based on a search term, search is case insensitive
 - Request Arguments: None
-- Sample: curl --request POST -data '{"searchTerm":"vinci"} http://http://127.0.0.1:5000/questions' 
+- Sample: curl -d '{"searchTerm":"vinci"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:5000/questions
 ```
 {
   "currentCategory": {
