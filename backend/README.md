@@ -67,36 +67,34 @@ One note before you delve into your tasks: for each endpoint you are expected to
 9. Create error handlers for all expected errors including 400, 404, 422 and 500. 
 
 ## REST Resource
-```
+
 **Getting Started**
-Base URL: This app is hosted locally and the default url is http://127.0.0.1:5000/
-Authentication: This version of the application does not require authentication or API keys.
+- Base URL: This app is hosted locally and the default url is http://127.0.0.1:5000/
+- Authentication: This version of the application does not require authentication or API keys.
 
 **Error Handling**
+```
 {
   "error": 404,
   "message": "Resource not Found",
   "success": false
 }
+```
 The API will return one of 4 error types when request fails.
-400: Bad Request
-404: Resource Not Found
-422: Unprocessable Entity
-500: Internal Server Error
+- 400: Bad Request
+- 404: Resource Not Found
+- 422: Unprocessable Entity
+- 500: Internal Server Error
 
 **Endpoints**
-GET '/categories'
-GET '/questions'
-POST '/questions'
-GET '/categories/{categoryId}/questions'
-POST '/quizzes'
-DELETE '/questions/{questionId}'
+
 
 GET '/categories'
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
 - Returns: An object with keys (categories and success) that categories contain a dictionary of with keys id and type, success is a boolean value. 
 - Sample: curl http://127.0.0.1:5000/categories
+```
 {
   "categories": [
     {
@@ -126,12 +124,14 @@ GET '/categories'
   ],
   "success": true
 }
+```
 
 GET '/questions'
 - Fetches a dictionary of all questions, current category and total questions. Pagination of 10 questions per page is in effect
 - Request Arguments: page, default is 1 
 - Returns: An object with keys (questions, categories, current_category, success, total_questions)
 - Sample: curl http://127.0.0.1:5000/questions
+```
 {
   "categories": [
     {
@@ -170,20 +170,24 @@ GET '/questions'
   "success": true,
   "total_questions": 19
 }
+```
 
 POST '/questions'
 - Creates a question
 - Request Arguments: None
 - Returns: 201 response
 - Sample: curl --request POST -data '{"question":"What is my name", "answer": "John", "category": "2", "difficulty": "3"} http://http://127.0.0.1:5000/questions' 
+```
 {
   "success": true
 }
+```
 
 POST '/questions'
 - Get questions based on a search term, search is case insensitive
 - Request Arguments: None
 - Sample: curl --request POST -data '{"searchTerm":"vinci"} http://http://127.0.0.1:5000/questions' 
+```
 {
   "currentCategory": {
     "id": 1,
@@ -201,12 +205,14 @@ POST '/questions'
   "success": true,
   "total_questions": 1
 }
+```
 
 GET '/categories/{categoryId}/questions'
 - Fetches questions based on category
 - Request Arguments: None
 - Returns: An object with keys (questions, current_category, success, total_questions)
 - Sample: http://127.0.0.1:5000/categories/4/questions
+```
 {
   "current_category": {
     "id": 4,
@@ -238,12 +244,14 @@ GET '/categories/{categoryId}/questions'
   "success": true,
   "total_questions": 3
 }
+```
 
 POST '/quizzes'
 - Fetches questions to play the quiz
 - Request Body: json with two keys(quiz_category, previous_questions), category id and a list of previous question ids
 - Return: A random question within the given category, if provided, and that is not one of the previous questions
 - Sample: http://127.0.0.1:5000/quizzes
+```
 {
   "question": {
     "answer": "Vulture",
@@ -253,10 +261,12 @@ POST '/quizzes'
     "question": "In Disney’s The Jungle Book what kind of animal is Ringo? Monkey, snake, vulture, elephant"
   }
 }
+```
 
 DELETE '/questions/{questionId}'
 - Deletes a question
 - Sample: http://127.0.0.1:5000/questions/5
+```
 {
   "success": true
 }
